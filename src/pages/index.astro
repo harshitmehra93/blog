@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { formatDate, getPublishedPosts, postUrl } from '../utils/blog';
+
+const posts = await getPublishedPosts();
+---
+
+<BaseLayout>
+  <section class="home-intro" aria-labelledby="page-title">
+    <h1 id="page-title">Harshit Mehra</h1>
+    <p>Software Engineer writing about system design, distributed systems, backend engineering, and things I learn.</p>
+  </section>
+  <section class="post-list" aria-labelledby="writing-heading">
+    <h2 id="writing-heading">Writing</h2>
+    {posts.length > 0 ? (
+      <ul>
+        {posts.map((post) => (
+          <li>
+            <article>
+              <h3><a href={postUrl(post)}>{post.data.title}</a></h3>
+              <time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate)}</time>
+              {post.data.description && <p>{post.data.description}</p>}
+            </article>
+          </li>
+        ))}
+      </ul>
+    ) : <p class="muted">Nothing published yet.</p>}
+  </section>
+</BaseLayout>

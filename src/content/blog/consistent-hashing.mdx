@@ -1,0 +1,50 @@
+---
+title: "Why Do We Need Consistent Hashing?"
+description: "Understanding the problem that consistent hashing solves."
+pubDate: 2026-10-28
+tags:
+  - System Design
+  - Distributed Systems
+  - Caching
+draft: false
+---
+
+import HashRingDiagram from '../../components/HashRingDiagram.astro';
+
+When a system grows beyond one machine, it needs a predictable answer to a small but important question: **which machine owns this key?** A naive answer is to take the hash of a key and use the remainder after division by the number of servers.
+
+```ts
+const serverIndex = hash(key) % servers.length;
+```
+
+That works while the server list is fixed. The trouble begins when it changes. Adding one server changes the divisor, so a large share of keys now map somewhere else. A cache can suddenly go cold; a storage layer may need to move far more data than necessary.
+
+## Put servers and keys on the same ring
+
+Consistent hashing maps both keys and servers into the same circular hash space. A key belongs to the first server found when moving clockwise around the ring.
+
+<HashRingDiagram />
+
+If a server leaves, only the keys that would have landed on that server move to its next neighbor. If a server joins, it takes responsibility for a section of the ring rather than reshuffling everything.
+
+## Why it helps
+
+- **Smaller migrations:** a membership change affects a bounded portion of keys.
+- **Predictable ownership:** every client can make the same routing decision from the same membership list.
+- **Incremental growth:** adding capacity does not require a global reset.
+
+In practice, systems often give each physical server several virtual positions on the ring. These virtual nodes smooth out uneven key distributions and make capacity weighting easier.
+
+> Consistent hashing does not remove the need to move data. It makes the movement local and manageable.
+
+## A small example
+
+| Event | What happens to a key owned by Server B? |
+| --- | --- |
+| Server C joins after B | The key stays on B. |
+| Server B leaves | The key moves to the next server clockwise. |
+| A virtual node is added near B | Only keys in that small interval move. |
+
+The exact hash function is less important than a stable, shared definition of the ring. Once that contract is in place, clients can route a key such as `customer:42` without asking a central directory for every request.
+
+The main idea is simple: move the smallest possible set of keys when the set of servers changes.

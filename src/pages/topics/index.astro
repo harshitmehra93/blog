@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPublishedPosts, topicSlug } from '../../utils/blog';
+
+const posts = await getPublishedPosts();
+const topicCounts = new Map<string, number>();
+for (const post of posts) {
+  for (const tag of post.data.tags) {
+    topicCounts.set(tag, (topicCounts.get(tag) ?? 0) + 1);
+  }
+}
+const topics = [...topicCounts.entries()].sort(([a], [b]) => a.localeCompare(b));
+---
+
+<BaseLayout title="Topics — Harshit Mehra" description="Browse notes by engineering topic.">
+  <section class="page topic-index" aria-labelledby="page-title">
+    <h1 id="page-title">Topics</h1>
+    <p class="page-intro">A growing index of the ideas I’m trying to understand more clearly.</p>
+    <ul>
+      {topics.map(([topic, count]) => (
+        <li><a href={`/topics/${topicSlug(topic)}/`}>{topic}</a><span>{count}</span></li>
+      ))}
+    </ul>
+  </section>
+</BaseLayout>
